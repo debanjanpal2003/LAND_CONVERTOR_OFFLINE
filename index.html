@@ -4,19 +4,19 @@
   <link rel="manifest" href="manifest.json">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Land Unit Converter (Offline)</title>
+  <title>Land Unit Converter (Offline) — Division (All Units)</title>
   <style>
     :root{
       --bg:#ffffff; --card:#f7f7f9; --accent:#1565c0; --muted:#666;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
     }
     body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:0; padding:18px; background:var(--bg); color:#111}
-    .wrap{max-width:820px;margin:0 auto}
+    .wrap{max-width:980px;margin:0 auto}
     h1{margin:0 0 12px;font-size:20px}
     .row{display: inline-flex;gap:12px;flex-wrap:wrap}
     .card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.03);margin-bottom:12px}
     label{display:block;font-weight:700;margin-bottom:6px}
-    input[type="text"], select{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;font-size:15px}
+    input[type="text"], input[type="number"], select{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;font-size:15px}
     button{background:var(--accent);color:#fff;padding:10px 12px;border-radius:8px;border:0;font-weight:700;cursor:pointer}
     button.secondary{background:#666;padding:8px 10px}
     .two{flex:1 1 220px}
@@ -29,16 +29,25 @@
     .copyBtn{background:#2e7d32}
     .note{background:#e8f4ff;padding:10px;border-radius:8px;color:#0b3b66;margin-top:8px}
     footer{margin-top:18px;font-size:13px;color:var(--muted)}
+    .inlineSmall{display:inline-flex;gap:8px;align-items:center}
+    .partsBox{margin-top:10px}
+    .ratioInput{width:110px}
+    .smallBtn{background:#37474f;padding:6px 8px;border-radius:8px;font-weight:700}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th, td{padding:8px;border-bottom:1px solid #eee;text-align:left}
+    .error{color:#b71c1c;font-weight:700;margin-top:8px}
+    .success{color:#2e7d32;font-weight:700;margin-top:8px}
+    .mutedSmall{color:var(--muted);font-size:13px;margin-top:6px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1 id="title">Land Unit Converter (Offline)</h1>
 
-    <div class="card row" style="align-items:center " >
+    <div class="card row" style="align-items:center">
       <div style="flex:1">
         <label id="label_value">Enter value</label>
-        <input id="valueInput" type="text" placeholder="e.g. 1.56565 or 1.735" style="width: 80%" />
+        <input id="valueInput" type="text" placeholder="e.g. 5 or 1.5" style="width: 80%"/>
       </div>
 
       <div style="width:170px">
@@ -46,14 +55,14 @@
         <select id="unitSelect">
           <option value="acre">Acre</option>
           <option value="bigha">Bigha</option>
-          <option value="katha">Katha</option>
+          <option value="katha" selected>Katha</option>
           <option value="chatak">Chatak</option>
           <option value="decimal">Decimal</option>
           <option value="sqft">Sq.ft</option>
         </select>
       </div>
 
-      <div style="width:120px;display:flex;flex-direction:column;gap:8px">
+      <div style="width:140px;display:flex;flex-direction:column;gap:8px">
         <label id="label_lang">Language</label>
         <select id="langSelect">
           <option value="en">English</option>
@@ -61,32 +70,71 @@
         </select>
       </div>
 
+      <div style="width:200px;display:flex;flex-direction:column;gap:8px;justify-content:flex-end">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="divideCheck" type="checkbox" />
+          <label for="divideCheck" style="margin:0;font-weight:600" id="divideLabel">Divide this land</label>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="margin:0;font-size:13px" id="partsLabel">Parts</label>
+          <input id="partsCount" type="number" min="2" max="10" value="2" style="width:70px" disabled />
+        </div>
+      </div>
+
       <div style="width:120px;display:flex;align-items:end">
         <button id="convertBtn">Convert</button>
       </div>
     </div>
 
+    <!-- Division Ratio Inputs -->
+    <div id="divisionCard" class="card" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <div>
+          <label style="margin:0 0 6px;font-weight:700" id="divisionTitle">Division Ratios</label>
+          <div class="muted" style="font-size:13px" id="divisionHelp">Provide ratios (like 1,1,2). They will be normalized to sum = 1.</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="equalPartsBtn" class="smallBtn" type="button">Equal parts</button>
+          <button id="validateRatiosBtn" class="smallBtn" type="button">Validate</button>
+        </div>
+      </div>
+
+      <div id="ratiosContainer" class="partsBox"></div>
+      <div id="ratioMsg" class="error" style="display:none"></div>
+    </div>
+
     <div class="card">
-      <div class="row" style="align-items:center;gap:10px">
+      <div class="row" style="align-items:center;gap:10px; width:100%">
         <h2 style="margin:0;font-size:16px" id="allTitle">Converted Values (All Units)</h2>
         <div style="flex:1"></div>
         <button class="secondary copyBtn" id="copyAllBtn">Copy</button>
       </div>
 
-      <div id="allResults" class="result" style="margin-top:8px"></div>
+      <div id="allResults" class="result"></div>
     </div>
 
     <div class="card">
-        <div class="row" style="align-items:center;gap:10px">
-            <h2 style="margin:0;font-size:16px" id="breakTitle">Hierarchy Breakdown (Acre → Bigha → Katha → Chatak → Decimal)</h2>
-            <div style="flex:1"></div>
-            <button class="secondary copyBtn" id="copyBreakBtn">Copy</button>  <!-- NEW BUTTON -->
-        </div>
+      <div class="row" style="align-items:center;gap:10px">
+        <h2 style="margin:0;font-size:16px" id="breakTitle">Hierarchy Breakdown (Acre → Bigha → Katha → Chatak → Decimal)</h2>
+        <div style="flex:1"></div>
+        <button class="secondary copyBtn" id="copyBreakBtn">Copy</button>
+      </div>
 
-        <div id="breakMono" class="mono" style="min-height:120px">—</div>
-        <div id="noteBox" class="note" style="display:block;margin-top:10px"></div>
+      <div id="breakMono" class="mono" style="min-height:120px">—</div>
+      <div id="noteBox" class="note" style="display:block;margin-top:10px"></div>
     </div>
 
+    <!-- Division results (all units) -->
+    <div id="divisionResultsCard" class="card" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px">
+        <h2 style="margin:0;font-size:16px" id="divisionTitleHeader">Division Results</h2>
+        <div style="flex:1"></div>
+        <button class="secondary copyBtn" id="copyDivisionBtn">Copy</button>
+      </div>
+
+      <div id="divisionResults" style="margin-top:10px"></div>
+      <div id="normalizeNote" class="mutedSmall"></div>
+    </div>
 
     <div class="card">
       <h2 style="margin:0 0 6px;font-size:16px" id="defsTitle">Unit Definitions Used</h2>
@@ -106,16 +154,16 @@
   }
   /* -------------------------
     Units & canonical sq.ft
+    Katha = 720 sq.ft (as requested)
     ------------------------- */
   const UNITS_SQFT = {
     acre: 43560.0,
     bigha: 14400.0,
-    katha: 720.0,
+    katha: 720.0,      // 1 Katha = 720 sq.ft
     chatak: 45.0,
     decimal: 435.6,
     sqft: 1.0
   };
-  const HIERARCHY = ['acre','bigha','katha','chatak','decimal','sqft'];
 
   /* -------------------------
     Translations
@@ -130,10 +178,23 @@
       all_units: 'Converted Values (All Units)',
       breakdown: 'Hierarchy Breakdown (Acre → Bigha → Katha → Chatak → Decimal → Sq.ft)',
       defs: 'Unit Definitions Used',
-      note: "Note: This breakdown computes whole counts of each larger unit and expands the leftover into smaller units. The 'decimal' line will show any fractional decimal (less than 1) as a decimal fraction and its approx sq.ft value; final leftover is shown in sq.ft.",
+      note: "Note: This breakdown computes whole counts of each larger unit and expands the leftover into smaller units. The 'decimal' line will show any fractional decimal (less than 1) and its approx sq.ft value; final leftover is shown in sq.ft.",
       labels: { acre:'Acre', bigha:'Bigha', katha:'Katha', chatak:'Chatak', decimal:'Decimal', sqft:'Sq.ft' },
       copy_all: 'Copy',
-      placeholder: 'e.g. 1.56565 or 1.735'
+      placeholder: 'e.g. 5 or 1.5',
+      divide_this: 'Divide this land',
+      parts: 'Parts',
+      division_ratios: 'Division Ratios',
+      division_help: 'Provide ratios (like 1,1,2). They will be normalized to sum = 1.',
+      equal_parts: 'Equal parts',
+      validate: 'Validate',
+      division_results: 'Division Results',
+      normalize_note: 'Ratios were normalized (shown below) because original ratios did not sum to 1.',
+      ratio_invalid: 'Ratios sum must be > 0',
+      person_label: 'Person',
+      raw_label: 'Raw',
+      norm_label: 'Normalized',
+      header_order: ['sqft','decimal','chatak','katha','bigha','acre'] // reverse order
     },
     bn: {
       title: 'জমির ইউনিট রূপান্তর (অফলাইন)',
@@ -144,10 +205,23 @@
       all_units: 'সমস্ত ইউনিটে রূপান্তরিত মান',
       breakdown: 'ক্রম অনুযায়ী ভাঙ্গন (একর → বিঘা → কাঠা → ছটাক → ডেসিমেল → বর্গফুট)',
       defs: 'ব্যবহৃত ইউনিট সংজ্ঞা',
-      note: "নোট: এই ভাঙনটি বড় ইউনিটগুলোকে প্রথমে পূর্ণ সংখ্যায় গণনা করে এবং বাকি অংশগুলোকে ছোট ইউনিটে রূপান্তর করে। 'ডেসিমেল' লাইনে ১-এর কম ভগ্নাংশ দেখানো হতে পারে এবং তার আনুমানিক স্কয়ার ফুট মান দেখাবে; শেষ বাকি অংশটি স্কয়ার ফুট হিসেবে দেখানো হবে।",
-      labels: { acre:'একর', bigha:'বিঘা', katha:'কাঠা', chatak:'ছটাক', decimal:'ডেসিমেল', sqft:'স্কয়ারফুট' },
+      note: "নোট: এই ভাঙনটি বড় ইউনিটগুলোকে প্রথমে পূর্ণ সংখ্যায় গণনা করে এবং বাকি অংশগুলোকে ছোট ইউনিটে রূপান্তর করে। 'ডেসিমেল' লাইনে ১-এর কম ভগ্নাংশ দেখানো হতে পারে এবং তার আনুমানিক স্কয়ার ফুট মান দেখাবে; শেষ বাকি অংশটি স্কয়ার ফুট হিসেবে দেখানো হবে।",
+      labels: { acre:'একর', bigha:'বিঘা', katha:'কাঠা', chatak:'ছটাক', decimal:'ডেসিমেল', sqft:'বর্গফুট' },
       copy_all: 'কপি',
-      placeholder: 'উদা: 1.56565 বা 1.735'
+      placeholder: 'উদা: 5 বা 1.5',
+      divide_this: 'এই জমি ভাগ করুন',
+      parts: 'ভাগ সংখ্যা',
+      division_ratios: 'ভাগের অনুপাত',
+      division_help: 'অনুপাত দিন (যেমন 1,1,2)। সেগুলো স্বয়ংক্রিয়ভাবে যোগফল = 1 হিসাবে স্বাভাবিককরণ করা হবে।',
+      equal_parts: 'সমান ভাগ',
+      validate: 'যাচাই করুন',
+      division_results: 'ভাগ ফলাফল',
+      normalize_note: 'অনুপাতগুলির যোগফল 1 না হওয়ায় এগুলো স্বাভাবিককরণ করা হয়েছে (নীচে দেখুন)।',
+      ratio_invalid: 'অনুপাতের যোগফল শূন্যের বেশি হতে হবে',
+      person_label: 'ব্যক্তি',
+      raw_label: 'অনুপাত',
+      norm_label: 'স্বাভাবিক',
+      header_order: ['sqft','decimal','chatak','katha','bigha','acre']
     }
   };
 
@@ -156,7 +230,6 @@
     ------------------------- */
   function fmtNumber(n, maxDec=6){
     if (n === null || n === undefined || isNaN(n)) return '0';
-    // show up to maxDec decimals, strip trailing zeros
     const fixed = Number(n).toFixed(maxDec);
     return stripTrailingZeros(fixed);
   }
@@ -166,14 +239,9 @@
     return s;
   }
   function toNumberSafe(str){
-    // allow commas and trim
-    if(!str) return NaN;
+    if(str === null || str === undefined) return NaN;
     const cleaned = String(str).replace(/,/g,'').trim();
     return Number(cleaned);
-  }
-  function prettyInt(n){
-    // integer string
-    try{ return String(Math.trunc(Number(n))) } catch(e){ return '0'; }
   }
 
   /* -------------------------
@@ -187,144 +255,304 @@
   const breakMono = document.getElementById('breakMono');
   const defsDiv = document.getElementById('defs');
   const noteBox = document.getElementById('noteBox');
-  const allTitle = document.getElementById('allTitle');
-  const breakTitle = document.getElementById('breakTitle');
-  const defsTitle = document.getElementById('defsTitle');
   const copyAllBtn = document.getElementById('copyAllBtn');
-  const titleEl = document.getElementById('title');
-  const labelValue = document.getElementById('label_value');
-  const labelUnit = document.getElementById('label_unit');
-  const labelLang = document.getElementById('label_lang');
+
+  const divideCheck = document.getElementById('divideCheck');
+  const partsCount = document.getElementById('partsCount');
+  const divisionCard = document.getElementById('divisionCard');
+  const ratiosContainer = document.getElementById('ratiosContainer');
+  const equalPartsBtn = document.getElementById('equalPartsBtn');
+  const validateRatiosBtn = document.getElementById('validateRatiosBtn');
+  const ratioMsg = document.getElementById('ratioMsg');
+
+  const divisionResultsCard = document.getElementById('divisionResultsCard');
+  const divisionResults = document.getElementById('divisionResults');
+  const copyDivisionBtn = document.getElementById('copyDivisionBtn');
+  const normalizeNote = document.getElementById('normalizeNote');
 
   /* -------------------------
-    Populate initial UI
+    Language init
     ------------------------- */
   let LANG = localStorage.getItem('land_lang') || 'en';
   langSelect.value = LANG;
   applyLanguage();
+  renderDefinitions(LANG);
+  noteBox.textContent = TEXT[LANG].note;
 
   /* -------------------------
-    Event handlers
+    Events
     ------------------------- */
   langSelect.addEventListener('change', () => {
     LANG = langSelect.value;
     localStorage.setItem('land_lang', LANG);
     applyLanguage();
+    // If division results already visible, re-render them in new language
+    if(divisionResultsCard.style.display !== 'none' && divisionResults.dataset._shares){
+      // rebuild from stored shares/raw/normalized
+      const stored = JSON.parse(divisionResults.dataset._shares);
+      const raw = JSON.parse(divisionResults.dataset._raw || '[]');
+      const norm = JSON.parse(divisionResults.dataset._norm || '[]');
+      const sumRaw = Number(divisionResults.dataset._sumraw || 0);
+      renderDivisionResults(stored, raw, norm, sumRaw);
+    }
+  });
+
+  divideCheck.addEventListener('change', () => {
+    if(divideCheck.checked){
+      divisionCard.style.display = 'block';
+      partsCount.disabled = false;
+      renderRatioInputs(Number(partsCount.value) || 2);
+    } else {
+      divisionCard.style.display = 'none';
+      partsCount.disabled = true;
+      ratiosContainer.innerHTML = '';
+      ratioMsg.style.display = 'none';
+      divisionResultsCard.style.display = 'none';
+      normalizeNote.innerText = '';
+    }
+  });
+
+  partsCount.addEventListener('change', () => {
+    let v = Number(partsCount.value);
+    if(isNaN(v) || v < 2) { partsCount.value = 2; v = 2; }
+    if(v > 10) { partsCount.value = 10; v = 10; }
+    renderRatioInputs(v);
+  });
+
+  equalPartsBtn.addEventListener('click', () => {
+    const n = Number(partsCount.value) || 2;
+    const inputs = ratiosContainer.querySelectorAll('input.ratioInput');
+    inputs.forEach(i => i.value = fmtNumber(1/n,6));
+    ratioMsg.style.display = 'none';
+  });
+
+  validateRatiosBtn.addEventListener('click', () => {
+    const ratios = readRawRatios();
+    const sum = ratios.reduce((a,b)=>a+b,0);
+    if(sum <= 0){
+      ratioMsg.style.display = 'block';
+      ratioMsg.className = 'error';
+      ratioMsg.innerText = TEXT[LANG].ratio_invalid;
+      return;
+    }
+    ratioMsg.style.display = 'block';
+    ratioMsg.className = 'success';
+    ratioMsg.innerText = (LANG==='bn')
+      ? `অনুপাত যোগফল = ${fmtNumber(sum,6)} — স্বাভাবিককরণ পরে যোগফল = 1`
+      : `Ratios sum = ${fmtNumber(sum,6)} — will be normalized to 1`;
   });
 
   convertBtn.addEventListener('click', () => {
-    runConversion();
+    runConversionAndDivision();
   });
 
   copyAllBtn.addEventListener('click', () => {
     copyText(allResults.innerText || breakMono.innerText);
   });
 
+  copyDivisionBtn.addEventListener('click', () => {
+    // prefer division copyText if present
+    if(divisionResults.dataset.copyText) copyText(divisionResults.dataset.copyText);
+    else copyText(divisionResults.innerText);
+  });
+
+  document.getElementById('copyBreakBtn').addEventListener('click', () => {
+    copyText(breakMono.innerText);
+  });
+
   /* -------------------------
-    Core conversion logic
+    Core: conversion & division
     ------------------------- */
-  function runConversion(){
+  function runConversionAndDivision(){
     const raw = valueInput.value.trim();
     if(raw === '') {
       alert(LANG==='bn' ? 'দয়া করে মান লিখুন' : 'Please enter a value');
       return;
     }
-    // parse numeric value (allow decimals)
     const val = toNumberSafe(raw);
     if(isNaN(val)){
       alert(LANG==='bn' ? 'অবৈধ সংখ্যা' : 'Invalid number');
       return;
     }
     const unit = unitSelect.value;
-
-    // total sqft:
     const totalSqft = val * UNITS_SQFT[unit];
 
-    // 1) show all conversions
+    // All unit conversions
     const all = {};
     for(const u in UNITS_SQFT){
       all[u] = totalSqft / UNITS_SQFT[u];
     }
     renderAllConversions(all, totalSqft);
-
-    // 2) hierarchical breakdown
-    const breakdownText = computeHierarchyText(totalSqft, LANG);
-    breakMono.textContent = breakdownText;
-
-    // 3) note
+    breakMono.textContent = computeHierarchyText(totalSqft, LANG);
     noteBox.textContent = TEXT[LANG].note;
-
-    // 4) definitions
     renderDefinitions(LANG);
+
+    // Division
+    if(divideCheck.checked){
+      const rawRatios = readRawRatios(); // user's raw numbers
+      const sumRaw = rawRatios.reduce((a,b)=>a+b,0);
+      if(sumRaw <= 0){
+        ratioMsg.style.display = 'block';
+        ratioMsg.className = 'error';
+        ratioMsg.innerText = TEXT[LANG].ratio_invalid;
+        divisionResultsCard.style.display = 'none';
+        return;
+      }
+      // Normalize ratios to sum = 1
+      const normalized = rawRatios.map(r => r / sumRaw);
+      // per-person sqft shares
+      const sharesSqft = normalized.map(r => r * totalSqft);
+      // convert shares to all units
+      const sharesAllUnits = allUnitsForShares(sharesSqft);
+      renderDivisionResults(sharesAllUnits, rawRatios, normalized, sumRaw);
+      // store for re-rendering on language change
+      divisionResults.dataset._shares = JSON.stringify(sharesAllUnits);
+      divisionResults.dataset._raw = JSON.stringify(rawRatios);
+      divisionResults.dataset._norm = JSON.stringify(normalized);
+      divisionResults.dataset._sumraw = String(sumRaw);
+    } else {
+      divisionResultsCard.style.display = 'none';
+    }
   }
 
-  /* compute hierarchical breakdown string */
+  /* convert array of shares (sqft) to object of all units */
+  function allUnitsForShares(sharesSqft){
+    // returns array of objects: { sqft:..., decimal:..., chatak:..., katha:..., bigha:..., acre:... }
+    return sharesSqft.map(sq => {
+      const obj = {};
+      for(const unit in UNITS_SQFT){
+        obj[unit] = sq / UNITS_SQFT[unit];
+      }
+      return obj;
+    });
+  }
+
+  /* render division results table showing all units (order: sqft, decimal, chatak, katha, bigha, acre) */
+  function renderDivisionResults(sharesAllUnits, rawRatios, normalized, sumRaw){
+    divisionResultsCard.style.display = 'block';
+    normalizeNote.innerText = '';
+    const labels = TEXT[LANG].labels;
+    const t = TEXT[LANG];
+
+    // header: Person | Raw | Normalized | Sq.ft | Decimal | Chatak | Katha | Bigha | Acre
+    let html = '<table><thead><tr>';
+    html += `<th>${t.person_label}</th>`;
+    html += `<th>${t.raw_label}</th>`;
+    html += `<th>${t.norm_label}</th>`;
+    // header order from TEXT[LANG].header_order
+    for(const u of t.header_order){
+      html += `<th>${labels[u]}</th>`;
+    }
+    html += '</tr></thead><tbody>';
+
+    for(let i=0;i<sharesAllUnits.length;i++){
+      const su = sharesAllUnits[i];
+      html += `<tr>`;
+      // Person label localized
+      const personLabel = (LANG==='bn') ? `${t.person_label} ${i+1}` : `${t.person_label} ${i+1}`;
+      html += `<td>${personLabel}</td>`;
+      html += `<td>${fmtNumber(rawRatios[i],6)}</td>`;
+      html += `<td>${fmtNumber(normalized[i],6)}</td>`;
+      for(const u of t.header_order){
+        const d = (u === 'sqft') ? 4 : 6;
+        html += `<td>${fmtNumber(su[u], d)}</td>`;
+      }
+      html += `</tr>`;
+    }
+
+    html += '</tbody></table>';
+    divisionResults.innerHTML = html;
+
+    // If raw ratios didn't sum to 1, show normalize note
+    if(Math.abs(sumRaw - 1) > 1e-9){
+      normalizeNote.innerText = t.normalize_note;
+    } else {
+      normalizeNote.innerText = '';
+    }
+
+    // Also set a text-only copy-friendly summary
+    buildDivisionTextForCopy(sharesAllUnits, rawRatios, normalized);
+  }
+
+  /* builds a nice plain-text summary in dataset for copying */
+  function buildDivisionTextForCopy(sharesAllUnits, rawRatios, normalized){
+    const labels = TEXT[LANG].labels;
+    const t = TEXT[LANG];
+    let txt = (LANG==='bn' ? 'ভাগের ফলাফল:\n' : 'Division results:\n');
+    for(let i=0;i<sharesAllUnits.length;i++){
+      txt += `${(LANG==='bn'? t.person_label+' ':'Person ') + (i+1)} | ${t.raw_label}=${fmtNumber(rawRatios[i],6)} | ${t.norm_label}=${fmtNumber(normalized[i],6)}\n`;
+      const su = sharesAllUnits[i];
+      // follow same header order
+      for(const u of t.header_order){
+        txt += `  ${labels[u]}: ${fmtNumber(su[u], u==='sqft'?4:6)}\n`;
+      }
+      txt += '\n';
+    }
+    divisionResults.dataset.copyText = txt;
+  }
+
+  /* read raw ratios (user may input any positive numbers) */
+  function readRawRatios(){
+    const inputs = ratiosContainer.querySelectorAll('input.ratioInput');
+    const arr = [];
+    inputs.forEach(i => {
+      const v = toNumberSafe(i.value);
+      arr.push(isNaN(v) ? 0 : v);
+    });
+    return arr;
+  }
+
+  /* -------------------------
+    Hierarchy breakdown (same as before)
+    ------------------------- */
   function computeHierarchyText(totalSqft, lang){
     let rem = totalSqft;
     const labels = TEXT[lang].labels;
     const parts = [];
 
-    // Acre
     const acreVal = Math.floor(rem / UNITS_SQFT['acre']);
     rem -= acreVal * UNITS_SQFT['acre'];
     parts.push(`${labels.acre}: ${acreVal}`);
 
-    // Bigha
     const bighaVal = Math.floor(rem / UNITS_SQFT['bigha']);
     rem -= bighaVal * UNITS_SQFT['bigha'];
     parts.push(`${labels.bigha}: ${bighaVal}`);
 
-    // Katha
     const kathaVal = Math.floor(rem / UNITS_SQFT['katha']);
     rem -= kathaVal * UNITS_SQFT['katha'];
     parts.push(`${labels.katha}: ${kathaVal}`);
 
-    // Chatak
     const chatakVal = Math.floor(rem / UNITS_SQFT['chatak']);
     rem -= chatakVal * UNITS_SQFT['chatak'];
     parts.push(`${labels.chatak}: ${chatakVal}`);
 
-    // Decimal (integer part + fractional decimal)
     const decimalInt = Math.floor(rem / UNITS_SQFT['decimal']);
     rem -= decimalInt * UNITS_SQFT['decimal'];
-    // fractional decimal (less than 1 decimal unit)
-    const fractionalDecimal = rem / UNITS_SQFT['decimal']; // value < 1
-    // leftover sqft (final)
-    const leftoverSqft = rem - Math.floor(rem); // avoid tiny FP? we will use rem directly as sqft remainder
-    // But better show rem as sqft remainder accurately:
-    const remSqft = rem; // remaining sqft < 1 decimal unit (i.e., < 435.6)
-    // Format lines:
+    const fractionalDecimal = rem / UNITS_SQFT['decimal'];
     let decLine = `${labels.decimal}: ${decimalInt}`;
     if(fractionalDecimal > 1e-12){
-      // show fractional decimal as value with up to 6 decimals and approx sqft
       decLine += `  +${fmtNumber(fractionalDecimal,6)} ${labels.decimal} (≈ ${fmtNumber(fractionalDecimal * UNITS_SQFT['decimal'], 4)} ${labels.sqft})`;
     }
     parts.push(decLine);
-
-    // final leftover in sq.ft (round to 4 decimals)
-    const finalLeftover = rem; // rem already < 1 decimal unit
-    // If finalLeftover is very small, round to 4 decimals
-    parts.push(`${labels.sqft}: ${fmtNumber(finalLeftover,4)}`);
-
+    parts.push(`${labels.sqft}: ${fmtNumber(rem,4)}`);
     return parts.join('\n');
   }
 
-  /* render full all-units conversion block */
+  /* -------------------------
+    Render helpers
+    ------------------------- */
   function renderAllConversions(all, totalSqft){
     const labels = TEXT[LANG].labels;
-    // Build HTML: label bold, number normal
     const lines = [];
-    lines.push(`<div><span class="labelBold">${labels.acre}:</span> ${fmtNumber(all['acre'],6)}</div>`);
-    lines.push(`<div><span class="labelBold">${labels.bigha}:</span> ${fmtNumber(all['bigha'],6)}</div>`);
-    lines.push(`<div><span class="labelBold">${labels.katha}:</span> ${fmtNumber(all['katha'],6)}</div>`);
-    lines.push(`<div><span class="labelBold">${labels.chatak}:</span> ${fmtNumber(all['chatak'],6)}</div>`);
-    lines.push(`<div><span class="labelBold">${labels.decimal}:</span> ${fmtNumber(all['decimal'],6)}</div>`);
     lines.push(`<div><span class="labelBold">${labels.sqft}:</span> ${fmtNumber(totalSqft,4)}</div>`);
-    // Render (we will use simple HTML)
+    lines.push(`<div><span class="labelBold">${labels.decimal}:</span> ${fmtNumber(all['decimal'],6)}</div>`);
+    lines.push(`<div><span class="labelBold">${labels.chatak}:</span> ${fmtNumber(all['chatak'],6)}</div>`);
+    lines.push(`<div><span class="labelBold">${labels.katha}:</span> ${fmtNumber(all['katha'],6)}</div>`);
+    lines.push(`<div><span class="labelBold">${labels.bigha}:</span> ${fmtNumber(all['bigha'],6)}</div>`);
+    lines.push(`<div><span class="labelBold">${labels.acre}:</span> ${fmtNumber(all['acre'],6)}</div>`);
     allResults.innerHTML = lines.join('');
   }
 
-  /* render definitions */
   function renderDefinitions(lang){
     const labels = TEXT[lang].labels;
     let html = '';
@@ -334,19 +562,30 @@
     defsDiv.innerHTML = html;
   }
 
-  /* apply language strings to UI */
   function applyLanguage(){
     const t = TEXT[LANG];
-    titleEl.textContent = t.title;
-    allTitle.textContent = t.all_units;
-    breakTitle.textContent = t.breakdown;
-    defsTitle.textContent = t.defs;
-    labelValue.textContent = t.enter_value;
-    labelUnit.textContent = t.select_unit;
-    labelLang.textContent = t.language;
-    convertBtn.textContent = t.convert;
-    copyAllBtn.textContent = t.copy_all;
-    valueInput.placeholder = t.placeholder;
+    document.getElementById('title').textContent = t.title;
+    document.getElementById('allTitle').textContent = t.all_units;
+    document.getElementById('breakTitle').textContent = t.breakdown;
+    document.getElementById('defsTitle').textContent = t.defs;
+    document.getElementById('label_value').textContent = t.enter_value;
+    document.getElementById('label_unit').textContent = t.select_unit;
+    document.getElementById('label_lang').textContent = t.language;
+    document.getElementById('convertBtn').textContent = t.convert;
+    document.getElementById('copyAllBtn').textContent = t.copy_all;
+    document.getElementById('valueInput').placeholder = t.placeholder;
+
+    document.getElementById('divideLabel').innerText = t.divide_this;
+    document.getElementById('partsLabel').innerText = t.parts;
+    document.getElementById('divisionTitle').innerText = t.division_ratios;
+    document.getElementById('divisionHelp').innerText = t.division_help;
+    document.getElementById('equalPartsBtn').innerText = t.equal_parts;
+    document.getElementById('validateRatiosBtn').innerText = t.validate;
+    document.getElementById('divisionTitleHeader').innerText = t.division_results;
+    document.getElementById('copyDivisionBtn').innerText = t.copy_all;
+    document.getElementById('copyBreakBtn').innerText = t.copy_all;
+    noteBox.textContent = t.note;
+
     // update unit select labels:
     const labels = t.labels;
     unitSelect.options[0].text = labels.acre;
@@ -355,34 +594,67 @@
     unitSelect.options[3].text = labels.chatak;
     unitSelect.options[4].text = labels.decimal;
     unitSelect.options[5].text = labels.sqft;
-    noteBox.textContent = t.note;
-    // re-render definitions if present
+
     renderDefinitions(LANG);
   }
 
   /* copy helper */
   function copyText(txt){
-    const toCopy = txt || allResults.innerText || breakMono.innerText;
-    if(!toCopy) return alert(LANG==='bn' ? 'কিছু নেই কপি করার জন্য' : 'Nothing to copy');
-    navigator.clipboard?.writeText(toCopy).then(()=> {
+    if(!txt) {
+      // prefer division copy text if visible
+      if(divisionResultsCard.style.display !== 'none' && divisionResults.dataset.copyText){
+        txt = divisionResults.dataset.copyText;
+      } else {
+        txt = allResults.innerText || breakMono.innerText || '';
+      }
+    }
+    if(!txt) return alert(LANG==='bn' ? 'কিছু নেই কপি করার জন্য' : 'Nothing to copy');
+    navigator.clipboard?.writeText(txt).then(()=> {
       alert(LANG==='bn' ? 'কপি হয়েছে' : 'Copied');
     }).catch(()=> {
-      // fallback
-      const ta = document.createElement('textarea'); ta.value = toCopy; document.body.appendChild(ta); ta.select();
+      const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select();
       try{ document.execCommand('copy'); alert(LANG==='bn' ? 'কপি হয়েছে' : 'Copied'); } catch(e){ alert('Copy failed') } finally{ ta.remove(); }
     });
   }
 
-  const copyBreakBtn = document.getElementById('copyBreakBtn');
+  /* -------------------------
+    Ratio inputs rendering
+    ------------------------- */
+  function renderRatioInputs(n){
+    ratiosContainer.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    for(let i=0;i<n;i++){
+      const wrapper = document.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.style.gap = '8px';
+      wrapper.style.marginBottom = '8px';
+      wrapper.style.alignItems = 'center';
 
-  copyBreakBtn.addEventListener('click', () => {
-    copyText(breakMono.innerText);
-  });
+      const lbl = document.createElement('div');
+      lbl.style.minWidth = '90px';
+      lbl.style.fontWeight = '700';
+      lbl.innerText = (LANG==='bn' ? TEXT[LANG].person_label+' ' : TEXT[LANG].person_label+' ') + (i+1);
 
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'ratioInput';
+      inp.placeholder = '1';
+      inp.value = '1';
+      inp.addEventListener('input', ()=> { ratioMsg.style.display = 'none'; });
 
-  /* initialize definitions and note */
-  renderDefinitions(LANG);
-  noteBox.textContent = TEXT[LANG].note;
+      wrapper.appendChild(lbl);
+      wrapper.appendChild(inp);
+      frag.appendChild(wrapper);
+    }
+    ratiosContainer.appendChild(frag);
+    ratioMsg.style.display = 'none';
+  }
+
+  // initialize
+  partsCount.disabled = true;
+
+  // initial language apply
+  applyLanguage();
 
 </script>
 </body>
