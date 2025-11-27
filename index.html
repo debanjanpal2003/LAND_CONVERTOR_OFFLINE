@@ -55,9 +55,9 @@
         <select id="unitSelect">
           <option value="acre">Acre</option>
           <option value="bigha">Bigha</option>
-          <option value="gonda">Gonda</option>
           <option value="katha" selected>Katha</option>
-          <option value="chatak">Chatak</option>   
+          <option value="chatak">Chatak</option>  
+          <option value="gonda">Gonda</option> 
           <option value="decimal">Decimal</option>
           <option value="sqft">Sq.ft</option>
         </select>
@@ -116,7 +116,7 @@
 
     <div class="card">
       <div class="row" style="align-items:center;gap:10px">
-        <h2 style="margin:0;font-size:16px" id="breakTitle">Hierarchy Breakdown (Acre → Bigha → Gonda → Katha → Chatak → Decimal)</h2>
+        <h2 style="margin:0;font-size:16px" id="breakTitle">Hierarchy Breakdown (Acre → Bigha →  Katha → Chatak → Gonda → Decimal)</h2>
         <div style="flex:1"></div>
         <button class="secondary copyBtn" id="copyBreakBtn">Copy</button>
       </div>
@@ -160,9 +160,9 @@
   const UNITS_SQFT = {
     acre: 43560.0,
     bigha: 14400.0,
-    gonda: 980.1,
     katha: 720.0,      // 1 Katha = 720 sq.ft
     chatak: 45.0,
+    gonda: 36,
     decimal: 435.6,
     sqft: 1.0
   };
@@ -178,10 +178,10 @@
       language: 'Language',
       convert: 'Convert',
       all_units: 'Converted Values (All Units)',
-      breakdown: 'Hierarchy Breakdown (Acre → Bigha → Gonda → Katha → Chatak → Decimal → Sq.ft)',
+      breakdown: 'Hierarchy Breakdown (Acre → Bigha →  Katha → Chatak → Gonda → Decimal → Sq.ft)',
       defs: 'Unit Definitions Used',
       note: "Note: This breakdown computes whole counts of each larger unit and expands the leftover into smaller units. The 'decimal' line will show any fractional decimal (less than 1) and its approx sq.ft value; final leftover is shown in sq.ft.",
-      labels: { acre:'Acre', bigha:'Bigha', gonda :'Gonda', katha:'Katha', chatak:'Chatak', decimal:'Decimal', sqft:'Sq.ft'  },
+      labels: { acre:'Acre', bigha:'Bigha', katha:'Katha', chatak:'Chatak', gonda :'Gonda', decimal:'Decimal', sqft:'Sq.ft'  },
       copy_all: 'Copy',
       placeholder: 'e.g. 5 or 1.5',
       divide_this: 'Divide this land',
@@ -196,7 +196,7 @@
       person_label: 'Person',
       raw_label: 'Raw',
       norm_label: 'Normalized',
-      header_order: ['sqft','decimal','chatak','katha','gonda','bigha','acre'] // reverse order
+      header_order: ['sqft','decimal','gonda','chatak','katha','bigha','acre'] // reverse order
     },
     bn: {
       title: 'জমির ইউনিট রূপান্তর (অফলাইন)',
@@ -205,10 +205,10 @@
       language: 'ভাষা',
       convert: 'রূপান্তর করুন',
       all_units: 'সমস্ত ইউনিটে রূপান্তরিত মান',
-      breakdown: 'ক্রম অনুযায়ী ভাঙ্গন (একর → বিঘা → কাঠা → গন্ডা → ছটাক → ডেসিমেল → বর্গফুট)',
+      breakdown: 'ক্রম অনুযায়ী ভাঙ্গন (একর → বিঘা → কাঠা →  ছটাক → গন্ডা → ডেসিমেল → বর্গফুট)',
       defs: 'ব্যবহৃত ইউনিট সংজ্ঞা',
       note: "নোট: এই ভাঙনটি বড় ইউনিটগুলোকে প্রথমে পূর্ণ সংখ্যায় গণনা করে এবং বাকি অংশগুলোকে ছোট ইউনিটে রূপান্তর করে। 'ডেসিমেল' লাইনে ১-এর কম ভগ্নাংশ দেখানো হতে পারে এবং তার আনুমানিক স্কয়ার ফুট মান দেখাবে; শেষ বাকি অংশটি স্কয়ার ফুট হিসেবে দেখানো হবে।",
-      labels: { acre:'একর', bigha:'বিঘা', gonda:'গন্ডা',katha:'কাঠা', chatak:'ছটাক', decimal:'ডেসিমেল', sqft:'বর্গফুট' },
+      labels: { acre:'একর', bigha:'বিঘা', katha:'কাঠা', chatak:'ছটাক', gonda:'গন্ডা',decimal:'ডেসিমেল', sqft:'বর্গফুট' },
       copy_all: 'কপি',
       placeholder: 'উদা: 5 বা 1.5',
       divide_this: 'এই জমি ভাগ করুন',
@@ -223,7 +223,7 @@
       person_label: 'ব্যক্তি',
       raw_label: 'অনুপাত',
       norm_label: 'স্বাভাবিক',
-      header_order: ['sqft','decimal','chatak','katha','gonda','bigha','acre']
+      header_order: ['sqft','decimal','gonda','chatak','katha','bigha','acre']
     }
   };
 
@@ -520,9 +520,6 @@
     rem -= bighaVal * UNITS_SQFT['bigha'];
     parts.push(`${labels.bigha}: ${bighaVal}`);
 
-    const gondaVal = Math.floor(rem / UNITS_SQFT['gonda']);
-    rem -= gondaVal * UNITS_SQFT['gonda'];
-    parts.push(`${labels.gonda}: ${gondaVal}`);
 
     const kathaVal = Math.floor(rem / UNITS_SQFT['katha']);
     rem -= kathaVal * UNITS_SQFT['katha'];
@@ -532,10 +529,16 @@
     rem -= chatakVal * UNITS_SQFT['chatak'];
     parts.push(`${labels.chatak}: ${chatakVal}`);
 
+    
+    const gondaVal = Math.floor(rem / UNITS_SQFT['gonda']);
+    rem -= gondaVal * UNITS_SQFT['gonda'];
+    parts.push(`${labels.gonda}: ${gondaVal}`);
+
     const decimalInt = Math.floor(rem / UNITS_SQFT['decimal']);
     rem -= decimalInt * UNITS_SQFT['decimal'];
     const fractionalDecimal = rem / UNITS_SQFT['decimal'];
     let decLine = `${labels.decimal}: ${decimalInt}`;
+
     if(fractionalDecimal > 1e-12){
       decLine += `  +${fmtNumber(fractionalDecimal,6)} ${labels.decimal} (≈ ${fmtNumber(fractionalDecimal * UNITS_SQFT['decimal'], 4)} ${labels.sqft})`;
     }
@@ -552,9 +555,9 @@
     const lines = [];
     lines.push(`<div><span class="labelBold">${labels.sqft}:</span> ${fmtNumber(totalSqft,4)}</div>`);
     lines.push(`<div><span class="labelBold">${labels.decimal}:</span> ${fmtNumber(all['decimal'],6)}</div>`);
+    lines.push(`<div><span class="labelBold">${labels.gonda}:</span> ${fmtNumber(all['gonda'],6)}</div>`);
     lines.push(`<div><span class="labelBold">${labels.chatak}:</span> ${fmtNumber(all['chatak'],6)}</div>`);
     lines.push(`<div><span class="labelBold">${labels.katha}:</span> ${fmtNumber(all['katha'],6)}</div>`);
-    lines.push(`<div><span class="labelBold">${labels.gonda}:</span> ${fmtNumber(all['gonda'],6)}</div>`);
     lines.push(`<div><span class="labelBold">${labels.bigha}:</span> ${fmtNumber(all['bigha'],6)}</div>`);
     lines.push(`<div><span class="labelBold">${labels.acre}:</span> ${fmtNumber(all['acre'],6)}</div>`);
     allResults.innerHTML = lines.join('');
@@ -563,7 +566,7 @@
   function renderDefinitions(lang){
     const labels = TEXT[lang].labels;
     let html = '';
-    for(const u of ['acre','bigha','gonda','katha','chatak','decimal']){
+    for(const u of ['acre','bigha','katha','chatak','gonda','decimal']){
       html += `<div><strong>${labels[u]}</strong> = ${fmtNumber(UNITS_SQFT[u],4)} ${labels.sqft}</div>`;
     }
     defsDiv.innerHTML = html;
@@ -597,9 +600,9 @@
     const labels = t.labels;
     unitSelect.options[0].text = labels.acre;
     unitSelect.options[1].text = labels.bigha;
-    unitSelect.options[2].text = labels.gonda;
-    unitSelect.options[3].text = labels.katha;
-    unitSelect.options[4].text = labels.chatak;
+    unitSelect.options[2].text = labels.katha;
+    unitSelect.options[3].text = labels.chatak;
+    unitSelect.options[4].text = labels.gonda;
     unitSelect.options[5].text = labels.decimal;
     unitSelect.options[6].text = labels.sqft;
 
